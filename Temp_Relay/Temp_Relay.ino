@@ -1,7 +1,7 @@
 #define RELAY1 8
 #define RELAY2 9
 #define TEMPSENSOR 0
-#define MAXTEMPC 61
+#define MAXTEMPC 75
 #define MAXTIME 7200000
 
 float Vin=5.0;     // [V]        
