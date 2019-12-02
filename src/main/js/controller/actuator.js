@@ -26,10 +26,11 @@ var raspi, Serial;
 
 class Actuator {
     constructor() {
-        raspi.init( () => {
+        var boundInit = raspi.init.bind(this);
+        boundInit( () => {
             this.serial = new Serial({"portId":SERIALPORT, "baudRate":SERIALBAUDRATE});
             this.serial.open();
-        }).bind(this);
+        });
     }
     /**
      * Requests status data from the actuator which is returned to the callback
