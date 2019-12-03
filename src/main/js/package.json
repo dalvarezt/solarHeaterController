@@ -9,6 +9,7 @@
   "author": "dalvarezt@outlook.com",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^8.2.0",
     "winston": "^3.2.1"
   }
 }
