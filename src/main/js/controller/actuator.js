@@ -1,8 +1,8 @@
 "use strict";
 
 
-const SERIALPORT = "/dev/ttyACM0";
-const SERIALBAUDRATE = 9600;
+
+const logger = require("./logger").logger.child({module:"actuator"});
 const SerialCommands = {
     "GETSTATUS":"STATUS",
     "STARTHEATER":"HEATER_ON",
@@ -28,7 +28,7 @@ class Actuator {
     constructor() {
         var boundInit = raspi.init.bind(this);
         boundInit( () => {
-            this.serial = new Serial({"portId":SERIALPORT, "baudRate":SERIALBAUDRATE});
+            this.serial = new Serial({"portId":process.env.actuator_serialPort, "baudRate":process.env.actuator_serialBaudRate});
             this.serial.open();
         });
     }
@@ -75,7 +75,7 @@ class Actuator {
         let currentTime = new Date().valueOf();
         let ellapsedTime = currentTime-this.temperatureTime;
         if (this.heaterOn) {
-            this.temperature = this.temperature + 0.48*(ellapsedTime/(1000*60*60));
+            this.temperature = this.temperature + 0.48*(ellapsedTime/(1000*600));
         } else {
             this.temperature = (this.ambientTemperature + (this.temperature - this.ambientTemperature)*Math.pow(Math.E, -0.02*(ellapsedTime/1000)))
         }
@@ -83,13 +83,13 @@ class Actuator {
     }
 
     startHeater() {
-        console.debug("Starting heater");
+        logger.log('debug', "Starting heater");
         this.updateTemperature();
         this.heaterOn = true;
     }
 
     stopHeater() {
-        console.debug("Stopping heater");
+        logger.log('debug',"Stopping heater");
         this.updateTemperature();
         this.heaterOn = false;
     }

@@ -1,9 +1,9 @@
-
+"use strict";
 const EventEmitter = require('events');
 
 const Actuator = require("./actuator.js").Actuator;
 const Calendar = require("./calendar.js").Calendar;
-
+const logger = require("./logger.js").logger.child({module:"controller"});
 class ObserverImpl extends EventEmitter {
     asyncEmit(eventName, ...params) {
         setImmediate(this.emit, eventName, ...params);
@@ -19,15 +19,7 @@ const EventSubjects = {
     "ManualHeat":"ManualHeat",
 };
 
-function printLog( logString ) {
-    let now = new Date();
-    console.log(
-        now.toLocaleDateString() + " " + now.toLocaleTimeString() + " - "+
-        logString
-    )
-}
-
-class Logger {
+class EventLogger {
     constructor() {
         Observer.addListener(EventSubjects.TemperatureReading, this.onTemperatureReading);
         Observer.addListener(EventSubjects.ProgramStart, this.onProgramStart);
@@ -37,27 +29,27 @@ class Logger {
 
 
     onTemperatureReading(status) {
-        printLog("Temperature reading" + JSON.stringify(status));
+        logger.log('info', `Temperature: ${status.temperature} - Status: ${status.status}`, status);
     }
 
     onProgramStart(program) {
-        printLog("Program start event: " + program.name);
+        logger.log('info', "Program start event: " + program.name, program);
     }
 
     onProgramStop(program) {
-        printLog("Program stop event: " + program.name);
+        logger.log("info", "Program stop event: " + program.name, program);
     }
 
 
 }
 
-
+new EventLogger();
 
 var State  = {
     "nextState":"Initializing",
     "Initializing":{
         "onEntry":function(controller) {
-            printLog("Initializing State");
+            logger.log("debug","Initializing State");
             State.nextState = "StandBy";
             State.controller = controller;
             controller.transition();
@@ -68,7 +60,7 @@ var State  = {
     },
     "StandBy":{
         "onEntry":function() {
-            printLog("Stand-by State")
+            logger.log("debug","Stand-by State")
             Observer.addListener(EventSubjects.ProgramStart, State.StandBy.onProgramStart);
         },
         "onProgramStart":function(program){
@@ -82,7 +74,7 @@ var State  = {
     },
     "RunningProgramWaiting":{
         "onEntry":function() {
-            printLog("Running program - no heat state")
+            logger.log("debug","Running program - no heat state")
             State.controller.getActuator().stopHeater();
             Observer.addListener(EventSubjects.TemperatureReading, State.RunningProgramWaiting.onTemperatureReading);
             Observer.addListener(EventSubjects.ProgramStop, State.RunningProgramWaiting.onProgramStop);
@@ -104,7 +96,7 @@ var State  = {
     },
     "RunningProgramHeating": {
         "onEntry":function() {
-            printLog("Running program - heating")
+            logger.log("debug","Running program - heating")
             State.controller.getActuator().startHeater();
             Observer.addListener(EventSubjects.TemperatureReading, State.RunningProgramHeating.onTemperatureReading);
             Observer.addListener(EventSubjects.ProgramStop, State.RunningProgramHeating.onProgramStop);
@@ -136,11 +128,11 @@ class Controller {
         this.calendar = new Calendar();
         this.currentState = "Initializing";
         this.nextSchedulle = this.calendar.nextSchedulle();
-        console.debug(`Next schedule`, this.nextSchedulle);
+        logger.log("debug",`Next schedule`, this.nextSchedulle);
         State.Initializing.onEntry(this);
 
         if (this.nextSchedulle.type=="stop") {
-            console.debug(`Program ${this.nextSchedulle.program.name} should have started`);
+            logger.log("debug",`Program ${this.nextSchedulle.program.name} should have started`);
             setTimeout( (e, pgm) => {
                 Observer.emit(e, pgm);
             }, 5000, EventSubjects.ProgramStart, this.nextSchedulle.program)
@@ -151,9 +143,9 @@ class Controller {
             actuator.getStatus(status => {
                 Observer.emit(EventSubjects.TemperatureReading, status);
             })
-        }, 10000, this.actuator);
+        }, process.env.controller_temperatureReadInterval, this.actuator);
 
-        setInterval(this.calendarLoop, 60*1000, this);
+        setInterval(this.calendarLoop, process.env.controller_calendarLoopInterval, this);
     }
 
     /**
@@ -163,23 +155,23 @@ class Controller {
     calendarLoop(controller) {
         let now = new Date();
         if (controller.nextSchedulle.schedule<=now) {
-            console.debug(`${controller.nextSchedulle.schedule} < ${now}`);
+            logger.log("debug",`${controller.nextSchedulle.schedule} < ${now}`);
             if (controller.nextSchedulle.type=="start") {
-                console.debug("Emiting proram start");
+                logger.log("debug","Emiting proram start");
                 Observer.emit(EventSubjects.ProgramStart, controller.nextSchedulle.program); 
             } else {
-                console.debug("Emiting proram stop");
+                logger.log("debug","Emiting proram stop");
                 Observer.emit(EventSubjects.ProgramStop, controller.nextSchedulle.program);
             }
 
             controller.nextSchedulle = controller.calendar.nextSchedulle();
-            console.debug("Next Schedule", controller.nextSchedulle);
+            logger.log("debug","Next Schedule", controller.nextSchedulle);
         }
     }
 
     transition() {
         let nextState = State.nextState;
-        console.debug(`Transitioning from ${this.currentState} to ${nextState}` );
+        logger.log("debug",`Transitioning from ${this.currentState} to ${nextState}` );
         if (this.currentState) {
             State[this.currentState].onTransition();
         }
@@ -196,5 +188,5 @@ class Controller {
 }
 
 module.exports.Controller = Controller;
-module.exports.Logger = Logger;
+
 

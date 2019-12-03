@@ -1,3 +1,5 @@
+"use strict";
+const logger = require("./logger").logger.child({module:"calendar"});
 /**
  * @typedef Program
  * @property {string} name - Name of the program
@@ -21,7 +23,7 @@
 class Calendar {
 
     constructor() {
-        this.programs = require("../calendar.json").programs;
+        this.programs = require(process.env.calendar_file).programs;
     }
     /**
      * Returns the schedule ocurring sooner
@@ -80,7 +82,7 @@ class Calendar {
             let timeStamp = new Date(dateStr + "T" + time);
             return timeStamp;
         } catch (err) {
-            console.error(`Invalid date value ${timestamp}`, err);
+            logger.error(`Invalid date value ${timestamp}`, err);
             return null;
         }
     }
