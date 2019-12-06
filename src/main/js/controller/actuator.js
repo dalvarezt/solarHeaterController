@@ -38,12 +38,10 @@ class Actuator {
                 let data = Buffer.concat(this.chunks).toString();
                 console.log(data);
                 if (data.indexOf("\n")>0) {
-                    console.log(data);
-                    let reading = data.substr(0, data.indexOf("}"))
-                    console.log("Reading: " + reading);
+                    let reading = data.substr(0, data.indexOf("}")+1)
                     this.observer.emit("TemperatureReading", JSON.parse(reading));
                     this.chunks = [];
-                    this.chunks.push(Buffer.from(substr(data.indexOf("\n"), data.length-data.indexOf("\n") )))
+                    this.chunks.push(Buffer.from(data.substr(data.indexOf("\n"), data.length-data.indexOf("\n")-1 )))
                 }
             });
         });
