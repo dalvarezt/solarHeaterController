@@ -37,7 +37,10 @@ class Actuator {
      * @param {ActuatorCallback} callback 
      */
     getStatus(callback) {
-        this.serial.on("data", callback);
+        this.serial.on("data", d => {
+            let val = d.toString();
+            callback(d);
+        });
         this.serial.write(SerialCommands.GETSTATUS);        
     }
 
