@@ -124,7 +124,7 @@ var State  = {
 
 class Controller {
     constructor() {
-        this.actuator = new Actuator();
+        this.actuator = new Actuator(Observer);
         this.calendar = new Calendar();
         this.currentState = "Initializing";
         this.nextSchedulle = this.calendar.nextSchedulle();
@@ -140,9 +140,7 @@ class Controller {
         }
 
         this.interval = setInterval( actuator => {
-            actuator.getStatus(status => {
-                Observer.emit(EventSubjects.TemperatureReading, status);
-            })
+            actuator.getStatus();
         }, process.env.controller_temperatureReadInterval, this.actuator);
 
         setInterval(this.calendarLoop, process.env.controller_calendarLoopInterval, this);

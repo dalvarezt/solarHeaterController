@@ -2,11 +2,11 @@
 
 
 
-const logger = require("./logger").logger.child({module:"actuator"});
+const logger = require("./logger").logger.child({ module: "actuator" });
 const SerialCommands = {
-    "GETSTATUS":"STATUS\n",
-    "STARTHEATER":"HEATER_ON\n",
-    "STOPHEATER":"HEATER_OFF\n"
+    "GETSTATUS": "STATUS\n",
+    "STARTHEATER": "HEATER_ON\n",
+    "STOPHEATER": "HEATER_OFF\n"
 };
 var raspi, Serial;
 
@@ -25,23 +25,31 @@ var raspi, Serial;
 
 
 class Actuator {
-    constructor() {
+    constructor(observer) {
         var boundInit = raspi.init.bind(this);
-        boundInit( () => {
-            this.serial = new Serial({"portId":process.env.actuator_serialPort, "baudRate":parseInt(process.env.actuator_serialBaudRate)});
+        boundInit(() => {
+            this.observer = observer;
+            this.serial = new Serial({ "portId": process.env.actuator_serialPort, "baudRate": parseInt(process.env.actuator_serialBaudRate) });
             this.serial.open();
+            this.chunks = [];
+
+            this.on("data", chunk => {
+                this.chunks.push(chunk);
+                let data = Buffer.concat(this.chunks).toString();
+                if (data.endsWith("}")) {
+                    this.observer.emit("TemperatureReading", JSON.parse(data));
+                    this.chunks = [];
+                }
+            }).bind(this);
         });
     }
+
     /**
      * Requests status data from the actuator which is returned to the callback
      * @param {ActuatorCallback} callback 
      */
-    getStatus(callback) {
-        this.serial.on("data", d => {
-            let val = d.toString();
-            callback(val);
-        });
-        this.serial.write(SerialCommands.GETSTATUS);        
+    getStatus() {
+        this.serial.write(SerialCommands.GETSTATUS);
     }
 
     startHeater() {
@@ -53,10 +61,10 @@ class Actuator {
     }
 }
 
- /**
-  * Dummy Actuator for tests
-  */
- class DummyActuator {
+/**
+ * Dummy Actuator for tests
+ */
+class DummyActuator {
     constructor() {
         this.heaterOn = false;
         this.temperature = 35.0;
@@ -70,17 +78,17 @@ class Actuator {
      */
     getStatus(callback) {
         this.updateTemperature();
-        setImmediate(callback, { "temperature":this.temperature, "status": (this.heaterOn ? "On":"Off")} )
-        
+        setImmediate(callback, { "temperature": this.temperature, "status": (this.heaterOn ? "On" : "Off") })
+
     }
 
     updateTemperature() {
         let currentTime = new Date().valueOf();
-        let ellapsedTime = currentTime-this.temperatureTime;
+        let ellapsedTime = currentTime - this.temperatureTime;
         if (this.heaterOn) {
-            this.temperature = this.temperature + 0.48*(ellapsedTime/(1000*600));
+            this.temperature = this.temperature + 0.48 * (ellapsedTime / (1000 * 600));
         } else {
-            this.temperature = (this.ambientTemperature + (this.temperature - this.ambientTemperature)*Math.pow(Math.E, -0.02*(ellapsedTime/1000)))
+            this.temperature = (this.ambientTemperature + (this.temperature - this.ambientTemperature) * Math.pow(Math.E, -0.02 * (ellapsedTime / 1000)))
         }
         this.temperatureTime = currentTime;
     }
@@ -92,7 +100,7 @@ class Actuator {
     }
 
     stopHeater() {
-        logger.log('debug',"Stopping heater");
+        logger.log('debug', "Stopping heater");
         this.updateTemperature();
         this.heaterOn = false;
     }
