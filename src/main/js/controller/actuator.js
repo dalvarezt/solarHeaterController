@@ -4,9 +4,9 @@
 
 const logger = require("./logger").logger.child({module:"actuator"});
 const SerialCommands = {
-    "GETSTATUS":"STATUS",
-    "STARTHEATER":"HEATER_ON",
-    "STOPHEATER":"HEATER_OFF"
+    "GETSTATUS":"STATUS\n",
+    "STARTHEATER":"HEATER_ON\n",
+    "STOPHEATER":"HEATER_OFF\n"
 };
 var raspi, Serial;
 
