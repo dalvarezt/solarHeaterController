@@ -48,27 +48,30 @@ void loop()
   
   boolean switchOn = false;
   //Read commands from serial if any
+  
   while(Serial.available() > 0) {
-    char inC = Serial.read();
-    switch (inC) {
-      case '+':
+    String cmd = Serial.readString();
+    if (cmd == "STATUS\n") {
+      Serial.println("{\"temperature\":" + String(TempC) + ",\"status\":" + (onStatus ? "true" : "false") + "}" );
+      break;      
+    } else if (cmd == "HEATER_ON\n") {
         if(!onStatus && TempC < MAXTEMPC && millis()-onTime < MAXTIME) {
           digitalWrite(RELAY1, LOW);
           digitalWrite(RELAY2, LOW);
           onTime=millis();
           onStatus=true;
-        }
-        break;
-      case '-':
-        if(onStatus) {
-          digitalWrite(RELAY1, HIGH);
-          digitalWrite(RELAY2, HIGH);
-          onTime=0;
-          onStatus=false;
-        }
-        break;
-      case 'r': 
-        onTime=0;
+          Serial.println("{\"temperature\":" + String(TempC) + ",\"status\":" + (onStatus ? "true" : "false") + "}" );
+        }      
+    } else if (cmd == "HEATER_OFF\n") {
+          if(onStatus) {
+            digitalWrite(RELAY1, HIGH);
+            digitalWrite(RELAY2, HIGH);
+            onTime=0;
+            onStatus=false;
+            Serial.println("{\"temperature\":" + String(TempC) + ",\"status\":" + (onStatus ? "true" : "false") + "}" );
+          }      
+    } else {
+      Serial.println("Unknown command: " + cmd);
     }
   }
 
@@ -85,6 +88,6 @@ void loop()
     onStatus = false;
   }
   
-  Serial.println("{\"temp\":" + String(TempC) + ",\"status\":" + String(onStatus) + "}" );
+  //Serial.println("{\"temp\":" + String(TempC) + ",\"status\":" + String(onStatus) + "}" );
   delay(1000);
 }
