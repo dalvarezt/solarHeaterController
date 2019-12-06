@@ -26,6 +26,8 @@ var raspi, Serial;
 
 class Actuator {
     constructor(observer) {
+        this.commandQueue = []
+        setInterval(this._sendCommand, 300, this);
         var boundInit = raspi.init.bind(this);
         boundInit(() => {
             this.observer = observer;
@@ -44,10 +46,17 @@ class Actuator {
                          logger.error("Can convert reading to JSON: " + data, err);
                      }
                     this.chunks = [];
-                    this.chunks.push(Buffer.from(data.substr(data.indexOf("\n"), data.length-data.indexOf("\n")-1 )))
+                    //this.chunks.push(Buffer.from(data.substr(data.indexOf("\n"), data.length-data.indexOf("\n")-1 )))
                 }
             });
         });
+    }
+
+    _sendCommand(act) {
+        let cmd = act.commandQueue.shift()
+        if (cmd) {
+            act.serial.write(cmd);
+        }
     }
 
     /**
@@ -55,15 +64,15 @@ class Actuator {
      * @param {ActuatorCallback} callback 
      */
     getStatus() {
-        this.serial.write(SerialCommands.GETSTATUS);
+        this.commandQueue.push(SerialCommands.GETSTATUS);
     }
 
     startHeater() {
-        this.serial.write(SerialCommands.STARTHEATER);
+        this.commandQueue.push(SerialCommands.STARTHEATER);
     }
 
     stopHeater() {
-        this.serial.write(SerialCommands.STOPHEATER);
+        this.commandQueue.push(SerialCommands.STOPHEATER);
     }
 }
 
