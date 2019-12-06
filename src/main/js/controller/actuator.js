@@ -33,14 +33,14 @@ class Actuator {
             this.serial.open();
             this.chunks = [];
 
-            this.on("data", chunk => {
+            this.serial.on("data", chunk => {
                 this.chunks.push(chunk);
                 let data = Buffer.concat(this.chunks).toString();
                 if (data.endsWith("}")) {
                     this.observer.emit("TemperatureReading", JSON.parse(data));
                     this.chunks = [];
                 }
-            }).bind(this);
+            });
         });
     }
 
