@@ -28,7 +28,7 @@ class Actuator {
     constructor() {
         var boundInit = raspi.init.bind(this);
         boundInit( () => {
-            this.serial = new Serial({"portId":process.env.actuator_serialPort, "baudRate":process.env.actuator_serialBaudRate});
+            this.serial = new Serial({"portId":process.env.actuator_serialPort, "baudRate":parseInt(process.env.actuator_serialBaudRate)});
             this.serial.open();
         });
     }
