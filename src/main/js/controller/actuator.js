@@ -36,9 +36,14 @@ class Actuator {
             this.serial.on("data", chunk => {
                 this.chunks.push(chunk);
                 let data = Buffer.concat(this.chunks).toString();
-                if (data.endsWith("}")) {
-                    this.observer.emit("TemperatureReading", JSON.parse(data));
+                console.log(data);
+                if (data.indexOf("\n")>0) {
+                    console.log(data);
+                    let reading = data.substr(0, data.indexOf("}"))
+                    console.log("Reading: " + reading);
+                    this.observer.emit("TemperatureReading", JSON.parse(reading));
                     this.chunks = [];
+                    this.chunks.push(Buffer.from(substr(data.indexOf("\n"), data.length-data.indexOf("\n") )))
                 }
             });
         });
