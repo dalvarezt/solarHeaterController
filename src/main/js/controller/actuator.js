@@ -5,8 +5,8 @@
 const logger = require("./logger").logger.child({ module: "actuator" });
 const SerialCommands = {
     "GETSTATUS": "STATUS\n",
-    "STARTHEATER": "HEATER_ON\n",
-    "STOPHEATER": "HEATER_OFF\n"
+    "STARTHEATER": "HEATERON\n",
+    "STOPHEATER": "HEATEROFF\n"
 };
 var raspi, Serial;
 
@@ -38,7 +38,11 @@ class Actuator {
                 let data = Buffer.concat(this.chunks).toString();
                 if (data.indexOf("\n")>0) {
                     let reading = data.substr(0, data.indexOf("}")+1)
-                    this.observer.emit("TemperatureReading", JSON.parse(reading));
+                    try {
+                       this.observer.emit("TemperatureReading", JSON.parse(reading));
+                     } catch (err) {
+                         logger.error("Can convert reading to JSON: " + data, err);
+                     }
                     this.chunks = [];
                     this.chunks.push(Buffer.from(data.substr(data.indexOf("\n"), data.length-data.indexOf("\n")-1 )))
                 }
