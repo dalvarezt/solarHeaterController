@@ -4,9 +4,9 @@
 
 const logger = require("./logger").logger.child({ module: "actuator" });
 const SerialCommands = {
-    "GETSTATUS": "STATUS\n",
-    "STARTHEATER": "HEATERON\n",
-    "STOPHEATER": "HEATEROFF\n"
+    "GETSTATUS": "ST\n",
+    "STARTHEATER": "HON\n",
+    "STOPHEATER": "HOF\n"
 };
 var raspi, Serial;
 
@@ -27,7 +27,7 @@ var raspi, Serial;
 class Actuator {
     constructor(observer) {
         this.commandQueue = []
-        setInterval(this._sendCommand, 300, this);
+        setInterval(this._sendCommand, 1000, this);
         var boundInit = raspi.init.bind(this);
         boundInit(() => {
             this.observer = observer;
